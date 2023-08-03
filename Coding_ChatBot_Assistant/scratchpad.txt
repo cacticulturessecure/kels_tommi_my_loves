@@ -1,0 +1,105 @@
+For the front-end part, you'll want to make HTTP POST requests from your React application to your backend API.
+
+You can do this by using the built-in fetch function in JavaScript or by using a library such as axios. Here's how you might set it up with fetch:
+
+javascript
+Copy code
+const postChat = async (userMessage) => {
+    const response = await fetch('http://localhost:8000/chat', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_message: userMessage }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const chatResponse = await response.json();
+    return chatResponse.response;
+}
+You would replace 'http://localhost:8000/chat' with the URL of your deployed backend if it's not running locally. Also, replace userMessage with the message from the user.
+
+You could then use this function in your React component, like so:
+
+javascript
+Copy code
+const MyChatComponent = () => {
+    const [userMessage, setUserMessage] = useState("");
+    const [chatbotResponse, setChatbotResponse] = useState("");
+
+    const handleSendMessage = async () => {
+        try {
+            const response = await postChat(userMessage);
+            setChatbotResponse(response);
+        } catch (err) {
+            console.error("Failed to send message: ", err);
+        }
+    };
+
+    return (
+        <div>
+            <input 
+                type="text"
+                value={userMessage}
+                onChange={(e) => setUserMessage(e.target.value)}
+            />
+            <button onClick={handleSendMessage}>Send</button>
+            <p>{chatbotResponse}</p>
+        </div>
+    );
+}
+In this simple chat component, a user can type a message into the text field, and when they click "Send", it sends the message to the chatbot and displays the response.
+
+Remember to replace 'http://localhost:8000/chat' with your Vercel deployment URL.
+
+Please note that this is a simplified example and might need to be adjusted based on the rest of your application's structure and style.
+
+can you make the above edits to the code I already have below? I'm also not sure where this react component would go???
+
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = 'https://your-supabase-url'
+const supabaseKey = 'your-supabase-key'
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+// Get all messages in the conversation
+const { data: messages, error } = await supabase
+  .from('conversations')
+  .select('*')
+
+async function addMessage(content) {
+    const response = await fetch('https://kjcbtxzeahnoiqwjglmk.supabase.co', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_message: content }),
+    });
+
+    const data = await response.json();
+
+    // Now insert the user's message and the chatbot's response into the database
+    const { data: message, error } = await supabase
+        .from('conversations')
+        .insert([
+            { role: 'user', content: content },
+            { role: 'chatbot', content: data.response }
+        ]);
+
+    // You might want to add error checking here
+}
+
+// Get the system message for a user
+const { data: user, error } = await supabase
+  .from('user_system_messages')
+  .select('system_message')
+  .eq('user_id', 'user-id')
+
+// Update the system message for a user
+const { data: user, error } = await supabase
+  .from('user_system_messages')
+  .update({ system_message: 'New system message' })
+  .eq('user_id', 'user-id')
